@@ -50,6 +50,19 @@ function cap(s: string): string {
 }
 
 const COND_LABEL: Record<string, string> = { nowy: 'Nowy', uzywany: 'Używany', nieuzywany: 'Nieużywany' };
+
+// Minimal projection of products for client-side filter — full objects bloat HTML to 1MB
+const clientProducts = products.map((p: any) => ({
+  s: p.marketplaces?.ownStore?.slug ?? null,
+  n: p.name ?? null,
+  m: p.manufacturer ?? null,
+  c: p.condition ?? null,
+  i: p.mainImage ?? p.images?.[0] ?? null,
+  pr: Number(p.marketplaces?.ownStore?.price ?? p.price ?? 0),
+  pw: typeof p.power?.value === 'number' ? p.power.value : null,
+  rp: typeof p.rpm?.value === 'number' ? p.rpm.value : null,
+  w: p.weight ?? null,
+}));
 ---
 <Layout
   title="Silniki trójfazowe – nowe i używane | silniki-trojfazowe.pl"
@@ -159,7 +172,7 @@ const COND_LABEL: Record<string, string> = { nowy: 'Nowy', uzywany: 'Używany', 
       <h2 class="section-title">Popularne moce</h2>
       <div class="pow-grid">
         {popularPowers.map(pw => (
-          <a href={`/moc/${pw.slug}`} class="pow-tile">
+          <a href={`/moc/${pw.slug}/`} class="pow-tile">
             <span class="pow-val">{pw.label}</span>
             <span class="pow-unit">kW</span>
             <span class="pow-cnt">{pw.cnt} szt.</span>
@@ -207,7 +220,7 @@ const COND_LABEL: Record<string, string> = { nowy: 'Nowy', uzywany: 'Używany', 
           const pSpecs = [pw && `${pw} kW`, p.rpm?.value && `${p.rpm.value} obr/min`, p.weight && `${p.weight} kg`].filter(Boolean).join(' · ');
           const condLabel = COND_LABEL[p.condition] || p.condition;
           return (
-            <a href={`/silnik/${pSlug}`} class="card">
+            <a href={`/silnik/${pSlug}/`} class="card">
               <div class="card-img"><img src={pImg} alt={pName} loading="lazy" /></div>
               <div class="card-body">
                 {p.manufacturer && <div class="card-mfr">{p.manufacturer}</div>}
@@ -264,7 +277,7 @@ const COND_LABEL: Record<string, string> = { nowy: 'Nowy', uzywany: 'Używany', 
     "offers":{"@type":"AggregateOffer","offerCount":total}
   })} />
 
-  <script define:vars={{ products, popularPowers, CONDITIONS, condCounts }}>
+  <script define:vars={{ products: clientProducts, popularPowers, CONDITIONS, condCounts }}>
     const PER = 24;
     const COND_LABEL = { nowy:'Nowy', uzywany:'Używany', nieuzywany:'Nieużywany' };
     let cond = '', pow = null, page = 1;
@@ -275,8 +288,8 @@ const COND_LABEL: Record<string, string> = { nowy: 'Nowy', uzywany: 'Używany', 
     if (u.get('s')) page = parseInt(u.get('s')) || 1;
 
     const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-    const matchCond = (p, c) => !c || p.condition === c;
-    const matchPow = (p, pw) => pw === null || (p.power?.value != null && Math.abs(p.power.value - pw) < 0.01);
+    const matchCond = (p, c) => !c || p.c === c;
+    const matchPow = (p, pw) => pw === null || (p.pw != null && Math.abs(p.pw - pw) < 0.01);
     const visible = () => products.filter(p => matchCond(p, cond) && matchPow(p, pow));
 
     function scrollToCatalog() {
@@ -311,22 +324,21 @@ const COND_LABEL: Record<string, string> = { nowy: 'Nowy', uzywany: 'Używany', 
       grid.innerHTML = !slice.length
         ? '<p class="nores">Brak produktów dla wybranych filtrów</p>'
         : slice.map(p => {
-            const slug = p.marketplaces?.ownStore?.slug;
-            const img = p.mainImage || p.images?.[0] || '/placeholder.webp';
-            const price = Number(p.marketplaces?.ownStore?.price ?? p.price);
-            const pw = p.power?.value;
-            const specs = [pw && `${pw} kW`, p.rpm?.value && `${p.rpm.value} obr/min`, p.weight && `${p.weight} kg`].filter(Boolean).join(' · ');
-            const name = cap(p.name);
-            const condL = COND_LABEL[p.condition] || p.condition;
-            return `<a href="/silnik/${slug}" class="card">
+            const slug = p.s;
+            const img = p.i || '/placeholder.webp';
+            const price = p.pr;
+            const specs = [p.pw && `${p.pw} kW`, p.rp && `${p.rp} obr/min`, p.w && `${p.w} kg`].filter(Boolean).join(' · ');
+            const name = cap(p.n);
+            const condL = COND_LABEL[p.c] || p.c;
+            return `<a href="/silnik/${slug}/" class="card">
               <div class="card-img"><img src="${img}" alt="${name}" loading="lazy"></div>
               <div class="card-body">
-                ${p.manufacturer?`<div class="card-mfr">${p.manufacturer}</div>`:''}
+                ${p.m?`<div class="card-mfr">${p.m}</div>`:''}
                 <div class="card-name">${name}</div>
                 ${specs?`<div class="card-specs">${specs}</div>`:''}
                 <div class="card-bottom">
                   <span class="card-price">${price.toLocaleString('pl-PL')} zł</span>
-                  <span class="card-badge ${p.condition}">${condL}</span>
+                  <span class="card-badge ${p.c}">${condL}</span>
                 </div>
               </div>
             </a>`;

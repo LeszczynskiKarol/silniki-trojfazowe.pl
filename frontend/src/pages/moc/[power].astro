@@ -72,12 +72,35 @@ const firstPageProducts = products.slice(0, PER_PAGE);
 function cap(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
+
+const pageUrl = `https://www.silniki-trojfazowe.pl/moc/${power}/`;
+const schemaBreadcrumb = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Strona główna", "item": "https://www.silniki-trojfazowe.pl/" },
+    { "@type": "ListItem", "position": 2, "name": `${label} kW`, "item": pageUrl }
+  ]
+};
+const schemaItemList = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": `Trójfazowe silniki elektryczne ${label} kW`,
+  "numberOfItems": products.length,
+  "itemListElement": firstPageProducts.map((p: any, i: number) => ({
+    "@type": "ListItem",
+    "position": i + 1,
+    "url": `https://www.silniki-trojfazowe.pl/silnik/${p.marketplaces?.ownStore?.slug}/`
+  })).filter((x: any) => !x.url.includes('undefined'))
+};
 ---
 <Layout
   title={`Trójfazowe silniki elektryczne ${label} kW – silniki-trojfazowe.pl`}
   description={`Trójfazowe silniki elektryczne ${label} kW. ${products.length} silników w ofercie. Kup online z dostawą kurierem.`}
-  canonical={`https://www.silniki-trojfazowe.pl/moc/${power}`}
+  canonical={pageUrl}
 >
+  <script type="application/ld+json" set:html={JSON.stringify(schemaBreadcrumb)} slot="head" />
+  <script type="application/ld+json" set:html={JSON.stringify(schemaItemList)} slot="head" />
   <style is:global slot="head">
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     :root { --navy:#1a2744; --blue:#2563eb; --surface:#f8f8f6; --border:#e8e8e4; --text:#1a1a1a; --muted:#8a8a8a; }
@@ -141,7 +164,7 @@ function cap(s: string): string {
   <section class="hero">
     <div class="hero-inner">
       <div class="hero-bc"><a href="/">Strona główna</a> / <a href="/">Silniki elektryczne</a> / {label} kW</div>
-      <h1>Używane silniki elektryczne {label} kW</h1>
+      <h1>Trójfazowe silniki elektryczne {label} kW</h1>
       <p>{products.length} produktów · Wysyłka 2–4 dni</p>
     </div>
   </section>
@@ -166,7 +189,7 @@ function cap(s: string): string {
           <div class="ftitle">Inne moce</div>
           <div class="pow-links">
             {otherPowers.map(pw => (
-              <a href={`/moc/${pw.slug}`} class="pow-link">{pw.label}</a>
+              <a href={`/moc/${pw.slug}/`} class="pow-link">{pw.label}</a>
             ))}
           </div>
         </div>
@@ -189,7 +212,7 @@ function cap(s: string): string {
           const pw = p.power?.value;
           const pSpecs = [pw && `${pw} kW`, p.rpm?.value && `${p.rpm.value} obr/min`, p.weight && `${p.weight} kg`].filter(Boolean).join(' · ');
           return (
-            <a href={`/silnik/${pSlug}`} class="card">
+            <a href={`/silnik/${pSlug}/`} class="card">
               <div class="card-img"><img src={pImg} alt={pName} loading="lazy" /></div>
               <div class="card-body">
                 {p.manufacturer && <div class="card-mfr">{p.manufacturer}</div>}
@@ -215,7 +238,17 @@ function cap(s: string): string {
     </div>
   </section>
 
-  <script define:vars={{ products, catCounts }}>
+  <script define:vars={{ products: products.map((p: any) => ({
+    s: p.marketplaces?.ownStore?.slug ?? null,
+    n: p.name ?? null,
+    m: p.manufacturer ?? null,
+    i: p.mainImage ?? null,
+    pr: Number(p.marketplaces?.ownStore?.price ?? p.price ?? 0),
+    pw: typeof p.power?.value === 'number' ? p.power.value : null,
+    rp: typeof p.rpm?.value === 'number' ? p.rpm.value : null,
+    w: p.weight ?? null,
+    cats: (p.categories || []).map((c: any) => c.category?.slug || c.slug || '').filter(Boolean),
+  })), catCounts }}>
     const PER = 24;
     let cat = '', page = 1;
 
@@ -224,7 +257,7 @@ function cap(s: string): string {
     if (u.get('s')) page = parseInt(u.get('s')) || 1;
 
     const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-    const matchCat = (p, c) => !c || (p.categories||[]).some(x => (x.category?.slug||x.slug||'') === c);
+    const matchCat = (p, c) => !c || p.cats.includes(c);
     const visible = () => products.filter(p => matchCat(p, cat));
 
     function render() {
@@ -249,16 +282,15 @@ function cap(s: string): string {
       grid.innerHTML = !slice.length
         ? '<p class="nores">Brak produktów</p>'
         : slice.map(p => {
-            const slug = p.marketplaces?.ownStore?.slug;
-            const img = p.mainImage || '/placeholder.webp';
-            const price = Number(p.marketplaces?.ownStore?.price ?? p.price);
-            const pw = p.power?.value;
-            const specs = [pw&&`${pw} kW`, p.rpm?.value&&`${p.rpm.value} obr/min`, p.weight&&`${p.weight} kg`].filter(Boolean).join(' · ');
-            const name = cap(p.name);
-            return `<a href="/silnik/${slug}" class="card">
+            const slug = p.s;
+            const img = p.i || '/placeholder.webp';
+            const price = p.pr;
+            const specs = [p.pw&&`${p.pw} kW`, p.rp&&`${p.rp} obr/min`, p.w&&`${p.w} kg`].filter(Boolean).join(' · ');
+            const name = cap(p.n);
+            return `<a href="/silnik/${slug}/" class="card">
               <div class="card-img"><img src="${img}" alt="${name}" loading="lazy"></div>
               <div class="card-body">
-                ${p.manufacturer?`<div class="card-mfr">${p.manufacturer}</div>`:''}
+                ${p.m?`<div class="card-mfr">${p.m}</div>`:''}
                 <div class="card-name">${name}</div>
                 ${specs?`<div class="card-specs">${specs}</div>`:''}
                 <div class="card-bottom">

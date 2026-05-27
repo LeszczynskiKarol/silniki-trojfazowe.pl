@@ -1,7 +1,7 @@
-roUser-agent: *
+User-agent: *
 Allow: /
 
 Disallow: /checkout
 Disallow: /zamowienie/
 
-Sitemap: https://www.silnik-elektryczny.pl/sitemap-index.xml
+Sitemap: https://www.silniki-trojfazowe.pl/sitemap-index.xml

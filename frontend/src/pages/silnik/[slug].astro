@@ -73,7 +73,9 @@ const specs = [
 ].filter(Boolean);
 
 // ── Schema.org JSON-LD ──
-const canonical = `https://www.silniki-trojfazowe.pl/silnik/${slug}`;
+const canonical = `https://www.silniki-trojfazowe.pl/silnik/${slug}/`;
+
+const priceValidUntil = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
 
 const schemaProduct: Record<string, any> = {
   "@context": "https://schema.org",
@@ -87,7 +89,9 @@ const schemaProduct: Record<string, any> = {
     "@type": "Offer",
     "price": price,
     "priceCurrency": "PLN",
+    "priceValidUntil": priceValidUntil,
     "availability": p.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    "itemCondition": p.condition === 'nowy' ? "https://schema.org/NewCondition" : "https://schema.org/UsedCondition",
     "url": canonical,
     "seller": {
       "@type": "Organization",
@@ -110,18 +114,11 @@ if (p.weight) {
 const breadcrumbItems: any[] = [
   { "@type": "ListItem", "position": 1, "name": "Strona główna", "item": "https://www.silniki-trojfazowe.pl/" }
 ];
-if (primaryCatSlug) {
-  breadcrumbItems.push({
-    "@type": "ListItem", "position": 2,
-    "name": primaryCatLabel,
-    "item": `https://www.silniki-trojfazowe.pl/kategoria/${primaryCatSlug}`
-  });
-}
 if (productPower && powerSlug) {
   breadcrumbItems.push({
     "@type": "ListItem", "position": breadcrumbItems.length + 1,
     "name": `${powerLabel} kW`,
-    "item": `https://www.silniki-trojfazowe.pl/moc/${powerSlug}`
+    "item": `https://www.silniki-trojfazowe.pl/moc/${powerSlug}/`
   });
 }
 breadcrumbItems.push({
@@ -241,7 +238,7 @@ const schemaBreadcrumb = {
     )}
     {productPower && powerSlug && (
       <>
-        <a href={`/moc/${powerSlug}`}>{powerLabel} kW</a>
+        <a href={`/moc/${powerSlug}/`}>{powerLabel} kW</a>
         <span class="breadcrumb-sep">/</span>
       </>
     )}
@@ -279,7 +276,7 @@ const schemaBreadcrumb = {
           <a href={`/kategoria/${primaryCatSlug}`} class="product-link">{primaryCatLabel}</a>
         )}
         {productPower && powerSlug && (
-          <a href={`/moc/${powerSlug}`} class="product-link">{powerLabel} kW</a>
+          <a href={`/moc/${powerSlug}/`} class="product-link">{powerLabel} kW</a>
         )}
       </div>
 
